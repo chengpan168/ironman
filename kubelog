@@ -1,0 +1,46 @@
+#!/bin/bash
+
+echo '使用方式: kubelog env pod namespace'
+echo '示例: kubelog daily core zqt-biz'
+
+
+SOURCE="$0"
+while [ -h "$SOURCE"  ]; do # resolve $SOURCE until the file is no longer a symlink
+    DIR="$( cd -P "$( dirname "$SOURCE"  )" && pwd  )"
+    SOURCE="$(readlink "$SOURCE")"
+    [[ $SOURCE != /*  ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+WORK_DIR="$( cd -P "$( dirname "$SOURCE"  )" && pwd  )"
+
+if [ ! -n "$1" ] ;then
+    echo "请输入环境, pod名称"
+    exit 0
+else
+    echo "the word you input is $1"
+fi
+
+
+# namespace 
+NAMESPACE="-A"
+
+if [ "$3" = "" ]
+then
+  echo "未指定 namespace, 默认查询所有 namespace! "
+else  
+	NAMESPACE="-n $3"
+  echo "指定namespace: $NAMESPACE"
+fi
+
+KUBE_CONFIG="$HOME/.kube/config-$1"
+
+if [ ! -f "$KUBE_CONFIG" ]; then
+  echo "k8s config 文件不存在, 请下载config文件到本地, 路径为: $KUBE_CONFIG"
+  exit 0
+fi
+
+
+# stern -n zqt-biz zqt-core --tail 1 --kubeconfig ~/.kube/config-daily
+CMD="$WORK_DIR/bin/stern $NAMESPACE -l app=$2 --tail 100 --kubeconfig $KUBE_CONFIG"
+echo "执行命令: $CMD"
+
+$WORK_DIR/bin/stern $NAMESPACE -l app=$2 --tail 100 --kubeconfig $KUBE_CONFIG
